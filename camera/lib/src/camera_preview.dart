@@ -25,18 +25,7 @@ class CameraPreview extends StatelessWidget {
         ? ValueListenableBuilder<CameraValue>(
             valueListenable: controller,
             builder: (BuildContext context, Object? value, Widget? child) {
-              return AspectRatio(
-                aspectRatio: _isLandscape()
-                    ? controller.value.aspectRatio
-                    : (1 / controller.value.aspectRatio),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: <Widget>[
-                    _wrapInRotatedBox(child: controller.buildPreview()),
-                    child ?? Container(),
-                  ],
-                ),
-              );
+              return _wrapInRotatedBox(child: controller.buildPreview());
             },
             child: child,
           )
@@ -52,13 +41,6 @@ class CameraPreview extends StatelessWidget {
       quarterTurns: _getQuarterTurns(),
       child: child,
     );
-  }
-
-  bool _isLandscape() {
-    return <DeviceOrientation>[
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight
-    ].contains(_getApplicableOrientation());
   }
 
   int _getQuarterTurns() {
