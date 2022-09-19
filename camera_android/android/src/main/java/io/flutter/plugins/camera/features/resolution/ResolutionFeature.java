@@ -15,6 +15,8 @@ import androidx.annotation.VisibleForTesting;
 import io.flutter.plugins.camera.CameraProperties;
 import io.flutter.plugins.camera.features.CameraFeature;
 import java.util.List;
+import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Controls the resolutions configuration on the {@link android.hardware.camera2} API.
@@ -236,6 +238,14 @@ public class ResolutionFeature extends CameraFeature<ResolutionPreset> {
 
         throw new IllegalArgumentException(
             "No capture session available for current capture session.");
+    }
+  }
+
+  private static class CompareSizesByArea implements Comparator<Size> {
+    @Override
+    public int compare(Size lhs, Size rhs) {
+      // We cast here to ensure the multiplications won't overflow.
+      return Long.signum((long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight());
     }
   }
 
