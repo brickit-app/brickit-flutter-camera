@@ -243,14 +243,6 @@ public class ResolutionFeature extends CameraFeature<ResolutionPreset> {
     }
   }
 
-  private static class CompareSizesByArea implements Comparator<Size> {
-    @Override
-    public int compare(Size lhs, Size rhs) {
-      // We cast here to ensure the multiplications won't overflow.
-      return Long.signum((long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight());
-    }
-  }
-
   static Size computeBestCaptureSize(StreamConfigurationMap streamConfigurationMap) {
     // For still image captures, we use the largest available size.
     Size newCaptureSize = Collections.max(Arrays.asList(streamConfigurationMap.getOutputSizes(ImageFormat.JPEG)),
@@ -260,6 +252,14 @@ public class ResolutionFeature extends CameraFeature<ResolutionPreset> {
       return new Size(newCaptureSize.getWidth(), newCaptureSize.getWidth() * 3 / 4);
     } else {
       return new Size(newCaptureSize.getWidth(), newCaptureSize.getHeight());
+    }
+  }
+
+  private static class CompareSizesByArea implements Comparator<Size> {
+    @Override
+    public int compare(Size lhs, Size rhs) {
+      // We cast here to ensure the multiplications won't overflow.
+      return Long.signum((long) lhs.getWidth() * lhs.getHeight() - (long) rhs.getWidth() * rhs.getHeight());
     }
   }
 
