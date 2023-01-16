@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../camera.dart';
+
 /// A widget showing a live camera preview.
 class CameraPreview extends StatelessWidget {
   /// Creates a preview widget for the given camera controller.
-  const CameraPreview(this.controller, {Key? key, this.child})
-      : super(key: key);
+  const CameraPreview(this.controller, {Key? key, this.child}) : super(key: key);
 
   /// The controller for the camera that the preview is shown for.
   final CameraController controller;
@@ -56,8 +56,6 @@ class CameraPreview extends StatelessWidget {
   DeviceOrientation _getApplicableOrientation() {
     return controller.value.isRecordingVideo
         ? controller.value.recordingOrientation!
-        : (controller.value.previewPauseOrientation ??
-            controller.value.lockedCaptureOrientation ??
-            controller.value.deviceOrientation);
+        : (controller.value.previewPauseOrientation ?? controller.value.lockedCaptureOrientation ?? controller.value.deviceOrientation);
   }
 }
