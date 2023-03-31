@@ -3,18 +3,21 @@
 // found in the LICENSE file.
 
 import 'package:camera_android_camerax/src/camera_info.dart';
-import 'package:camera_android_camerax/src/camerax_library.pigeon.dart';
+import 'package:camera_android_camerax/src/camerax_library.g.dart';
 import 'package:camera_android_camerax/src/instance_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
 import 'camera_info_test.mocks.dart';
-import 'test_camerax_library.pigeon.dart';
+import 'test_camerax_library.g.dart';
 
-@GenerateMocks(<Type>[TestCameraInfoHostApi])
+@GenerateMocks(<Type>[TestCameraInfoHostApi, TestInstanceManagerHostApi])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Mocks the call to clear the native InstanceManager.
+  TestInstanceManagerHostApi.setup(MockTestInstanceManagerHostApi());
 
   group('CameraInfo', () {
     tearDown(() => TestCameraInfoHostApi.setup(null));
