@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/camera/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/camera/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/camera/build" />
+      <excludeFolder url="file://$MODULE_DIR$/camera/example/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/camera/example/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/camera/example/build" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_android/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_android/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_android/build" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_android/example/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_android/example/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_android/example/build" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_android_camerax/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_android_camerax/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_android_camerax/build" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_android_camerax/example/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_android_camerax/example/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_android_camerax/example/build" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_avfoundation/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_avfoundation/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_avfoundation/build" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_avfoundation/example/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_avfoundation/example/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/camera_avfoundation/example/build" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

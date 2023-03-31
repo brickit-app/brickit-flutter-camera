@@ -1,3 +1,29 @@
+## 0.9.13+1
+
+* Clarifies explanation of endorsement in README.
+
+## 0.9.13
+
+* Allows camera to be switched while video recording.
+* Aligns Dart and Flutter SDK constraints.
+
+## 0.9.12
+
+* Updates minimum Flutter version to 3.3 and iOS 11.
+
+## 0.9.11+1
+
+* Updates links for the merge of flutter/plugins into flutter/packages.
+
+## 0.9.11
+
+* Adds back use of Optional type.
+* Updates minimum Flutter version to 3.0.
+
+## 0.9.10+2
+
+* Updates code for stricter lint checks.
+
 ## 0.9.10+1
 
 * Updates code for stricter lint checks.

@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:camera_platform_interface/camera_platform_interface.dart';
 import 'package:flutter/foundation.dart';
@@ -23,6 +24,7 @@ class CameraValue {
     required this.exposureMode,
     required this.focusMode,
     required this.deviceOrientation,
+    required this.description,
     this.lockedCaptureOrientation,
     this.recordingOrientation,
     this.isPreviewPaused = false,
@@ -30,7 +32,7 @@ class CameraValue {
   });
 
   /// Creates a new camera controller state for an uninitialized controller.
-  const CameraValue.uninitialized()
+  const CameraValue.uninitialized(CameraDescription description)
       : this(
           isInitialized: false,
           isRecordingVideo: false,
@@ -42,6 +44,7 @@ class CameraValue {
           focusMode: FocusMode.auto,
           deviceOrientation: DeviceOrientation.portraitUp,
           isPreviewPaused: false,
+          description: description,
         );
 
   /// True after [CameraController.initialize] has completed successfully.
@@ -91,6 +94,9 @@ class CameraValue {
   /// The orientation of the currently running video recording.
   final DeviceOrientation? recordingOrientation;
 
+  /// The properties of the camera device controlled by this controller.
+  final CameraDescription description;
+
   /// Creates a modified copy of the object.
   ///
   /// Explicitly specified fields get the specified value, all other fields get
@@ -108,10 +114,11 @@ class CameraValue {
     bool? exposurePointSupported,
     bool? focusPointSupported,
     DeviceOrientation? deviceOrientation,
-    DeviceOrientation? lockedCaptureOrientation,
-    DeviceOrientation? recordingOrientation,
+    Optional<DeviceOrientation>? lockedCaptureOrientation,
+    Optional<DeviceOrientation>? recordingOrientation,
     bool? isPreviewPaused,
-    DeviceOrientation? previewPauseOrientation,
+    CameraDescription? description,
+    Optional<DeviceOrientation>? previewPauseOrientation,
   }) {
     return CameraValue(
       isInitialized: isInitialized ?? this.isInitialized,
@@ -124,12 +131,17 @@ class CameraValue {
       exposureMode: exposureMode ?? this.exposureMode,
       focusMode: focusMode ?? this.focusMode,
       deviceOrientation: deviceOrientation ?? this.deviceOrientation,
-      lockedCaptureOrientation:
-          lockedCaptureOrientation ?? this.lockedCaptureOrientation,
-      recordingOrientation: recordingOrientation ?? this.recordingOrientation,
+      lockedCaptureOrientation: lockedCaptureOrientation == null
+          ? this.lockedCaptureOrientation
+          : lockedCaptureOrientation.orNull,
+      recordingOrientation: recordingOrientation == null
+          ? this.recordingOrientation
+          : recordingOrientation.orNull,
       isPreviewPaused: isPreviewPaused ?? this.isPreviewPaused,
-      previewPauseOrientation:
-          previewPauseOrientation ?? this.previewPauseOrientation,
+      description: description ?? this.description,
+      previewPauseOrientation: previewPauseOrientation == null
+          ? this.previewPauseOrientation
+          : previewPauseOrientation.orNull,
     );
   }
 
@@ -160,14 +172,14 @@ class CameraValue {
 class CameraController extends ValueNotifier<CameraValue> {
   /// Creates a new camera controller in an uninitialized state.
   CameraController(
-    this.description,
+    CameraDescription cameraDescription,
     this.resolutionPreset, {
     this.enableAudio = true,
     this.imageFormatGroup,
-  }) : super(const CameraValue.uninitialized());
+  }) : super(CameraValue.uninitialized(cameraDescription));
 
   /// The properties of the camera device controlled by this controller.
-  final CameraDescription description;
+  CameraDescription get description => value.description;
 
   /// The resolution this controller is targeting.
   ///
@@ -197,7 +209,9 @@ class CameraController extends ValueNotifier<CameraValue> {
   int get cameraId => _cameraId;
 
   /// Initializes the camera on the device.
-  Future<void> initialize() async {
+  Future<void> initialize() => _initializeWithDescription(description);
+
+  Future<void> _initializeWithDescription(CameraDescription description) async {
     final Completer<CameraInitializedEvent> initializeCompleter =
         Completer<CameraInitializedEvent>();
 
@@ -229,6 +243,7 @@ class CameraController extends ValueNotifier<CameraValue> {
 
     value = value.copyWith(
       isInitialized: true,
+      description: description,
       previewSize: await initializeCompleter.future
           .then((CameraInitializedEvent event) => Size(
                 event.previewWidth,
@@ -257,14 +272,26 @@ class CameraController extends ValueNotifier<CameraValue> {
     await CameraPlatform.instance.pausePreview(_cameraId);
     value = value.copyWith(
         isPreviewPaused: true,
-        previewPauseOrientation:
-            value.lockedCaptureOrientation ?? value.deviceOrientation);
+        previewPauseOrientation: Optional<DeviceOrientation>.of(
+            value.lockedCaptureOrientation ?? value.deviceOrientation));
   }
 
   /// Resumes the current camera preview
   Future<void> resumePreview() async {
     await CameraPlatform.instance.resumePreview(_cameraId);
-    value = value.copyWith(isPreviewPaused: false);
+    value = value.copyWith(
+        isPreviewPaused: false,
+        previewPauseOrientation: const Optional<DeviceOrientation>.absent());
+  }
+
+  /// Sets the description of the camera
+  Future<void> setDescription(CameraDescription description) async {
+    if (value.isRecordingVideo) {
+      await CameraPlatform.instance.setDescriptionWhileRecording(description);
+      value = value.copyWith(description: description);
+    } else {
+      await _initializeWithDescription(description);
+    }
   }
 
   /// Captures an image and returns the file where it was saved.
@@ -307,8 +334,8 @@ class CameraController extends ValueNotifier<CameraValue> {
         isRecordingVideo: true,
         isRecordingPaused: false,
         isStreamingImages: streamCallback != null,
-        recordingOrientation:
-            value.lockedCaptureOrientation ?? value.deviceOrientation);
+        recordingOrientation: Optional<DeviceOrientation>.of(
+            value.lockedCaptureOrientation ?? value.deviceOrientation));
   }
 
   /// Stops the video recording and returns the file where it was saved.
@@ -321,7 +348,10 @@ class CameraController extends ValueNotifier<CameraValue> {
 
     final XFile file =
         await CameraPlatform.instance.stopVideoRecording(_cameraId);
-    value = value.copyWith(isRecordingVideo: false);
+    value = value.copyWith(
+      isRecordingVideo: false,
+      recordingOrientation: const Optional<DeviceOrientation>.absent(),
+    );
     return file;
   }
 
@@ -389,12 +419,16 @@ class CameraController extends ValueNotifier<CameraValue> {
   Future<void> lockCaptureOrientation() async {
     await CameraPlatform.instance
         .lockCaptureOrientation(_cameraId, value.deviceOrientation);
-    value = value.copyWith(lockedCaptureOrientation: value.deviceOrientation);
+    value = value.copyWith(
+        lockedCaptureOrientation:
+            Optional<DeviceOrientation>.of(value.deviceOrientation));
   }
 
   /// Unlocks the capture orientation.
   Future<void> unlockCaptureOrientation() async {
     await CameraPlatform.instance.unlockCaptureOrientation(_cameraId);
+    value = value.copyWith(
+        lockedCaptureOrientation: const Optional<DeviceOrientation>.absent());
   }
 
   /// Sets the focus mode for taking pictures.
@@ -426,5 +460,114 @@ class CameraController extends ValueNotifier<CameraValue> {
     if (!_isDisposed) {
       super.removeListener(listener);
     }
+  }
+}
+
+/// A value that might be absent.
+///
+/// Used to represent [DeviceOrientation]s that are optional but also able
+/// to be cleared.
+@immutable
+class Optional<T> extends IterableBase<T> {
+  /// Constructs an empty Optional.
+  const Optional.absent() : _value = null;
+
+  /// Constructs an Optional of the given [value].
+  ///
+  /// Throws [ArgumentError] if [value] is null.
+  Optional.of(T value) : _value = value {
+    // TODO(cbracken): Delete and make this ctor const once mixed-mode
+    // execution is no longer around.
+    ArgumentError.checkNotNull(value);
+  }
+
+  /// Constructs an Optional of the given [value].
+  ///
+  /// If [value] is null, returns [absent()].
+  const Optional.fromNullable(T? value) : _value = value;
+
+  final T? _value;
+
+  /// True when this optional contains a value.
+  bool get isPresent => _value != null;
+
+  /// True when this optional contains no value.
+  bool get isNotPresent => _value == null;
+
+  /// Gets the Optional value.
+  ///
+  /// Throws [StateError] if [value] is null.
+  T get value {
+    if (_value == null) {
+      throw StateError('value called on absent Optional.');
+    }
+    return _value!;
+  }
+
+  /// Executes a function if the Optional value is present.
+  void ifPresent(void Function(T value) ifPresent) {
+    if (isPresent) {
+      ifPresent(_value as T);
+    }
+  }
+
+  /// Execution a function if the Optional value is absent.
+  void ifAbsent(void Function() ifAbsent) {
+    if (!isPresent) {
+      ifAbsent();
+    }
+  }
+
+  /// Gets the Optional value with a default.
+  ///
+  /// The default is returned if the Optional is [absent()].
+  ///
+  /// Throws [ArgumentError] if [defaultValue] is null.
+  T or(T defaultValue) {
+    return _value ?? defaultValue;
+  }
+
+  /// Gets the Optional value, or `null` if there is none.
+  T? get orNull => _value;
+
+  /// Transforms the Optional value.
+  ///
+  /// If the Optional is [absent()], returns [absent()] without applying the transformer.
+  ///
+  /// The transformer must not return `null`. If it does, an [ArgumentError] is thrown.
+  Optional<S> transform<S>(S Function(T value) transformer) {
+    return _value == null
+        ? Optional<S>.absent()
+        : Optional<S>.of(transformer(_value as T));
+  }
+
+  /// Transforms the Optional value.
+  ///
+  /// If the Optional is [absent()], returns [absent()] without applying the transformer.
+  ///
+  /// Returns [absent()] if the transformer returns `null`.
+  Optional<S> transformNullable<S>(S? Function(T value) transformer) {
+    return _value == null
+        ? Optional<S>.absent()
+        : Optional<S>.fromNullable(transformer(_value as T));
+  }
+
+  @override
+  Iterator<T> get iterator =>
+      isPresent ? <T>[_value as T].iterator : Iterable<T>.empty().iterator;
+
+  /// Delegates to the underlying [value] hashCode.
+  @override
+  int get hashCode => _value.hashCode;
+
+  /// Delegates to the underlying [value] operator==.
+  @override
+  bool operator ==(Object o) => o is Optional<T> && o._value == _value;
+
+  @override
+  String toString() {
+    return _value == null
+        ? 'Optional { absent }'
+        : 'Optional { value: $_value }';
   }
 }

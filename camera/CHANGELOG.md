@@ -1,3 +1,28 @@
+## NEXT
+
+* Updates minimum Flutter version to 3.3.
+* Aligns Dart and Flutter SDK constraints.
+
+## 0.10.3+2
+
+* Updates iOS minimum version in README.
+
+## 0.10.3+1
+
+* Updates links for the merge of flutter/plugins into flutter/packages.
+
+## 0.10.3
+
+* Adds back use of Optional type.
+
+## 0.10.2+1
+
+* Updates code for stricter lint checks.
+
+## 0.10.2
+
+* Implements option to also stream when recording a video.
+
 ## 0.10.1
 
 * Remove usage of deprecated quiver Optional type.
@@ -27,7 +52,7 @@
 ## 0.10.0
 
 * **Breaking Change** Bumps default camera_web package version, which updates permission exception code from `cameraPermission` to `CameraAccessDenied`.
-* **Breaking Change** Bumps default camera_android package version, which updates permission exception code from `cameraPermission` to 
+* **Breaking Change** Bumps default camera_android package version, which updates permission exception code from `cameraPermission` to
   `CameraAccessDenied` and `AudioAccessDenied`.
 * Ignores unnecessary import warnings in preparation for [upcoming Flutter changes](https://github.com/flutter/flutter/pull/106316).
 
