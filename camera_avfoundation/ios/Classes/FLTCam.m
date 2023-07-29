@@ -162,6 +162,9 @@ NSString *const errorMethod = @"error";
   _motionManager = [[CMMotionManager alloc] init];
   [_motionManager startAccelerometerUpdates];
 
+  _videoCaptureSession.sessionPreset = AVCaptureSessionPresetInputPriority;
+  
+  
   [self setCaptureSessionPreset:_resolutionPreset];
   [self updateOrientation];
 
@@ -338,12 +341,28 @@ NSString *const errorMethod = @"error";
 }
 
 - (void)setCaptureSessionPreset:(FLTResolutionPreset)resolutionPreset {
+  AVCaptureDeviceFormat *bestFormat = nil;
+  NSUInteger maxHeight = 0;
   switch (resolutionPreset) {
-    case FLTResolutionPresetMax:
-      if ([_videoCaptureSession canSetSessionPreset:AVCaptureSessionPresetPhoto]) {
-        _videoCaptureSession.sessionPreset = AVCaptureSessionPresetPhoto;
-        _previewSize = CGSizeMake(4032, 3024);
-        break;
+    case FLTResolutionPresetMax:     
+      for ( AVCaptureDeviceFormat *format in [_captureDevice formats] ) {
+            CMVideoDimensions res = CMVideoFormatDescriptionGetDimensions(format.formatDescription);
+            NSUInteger height = res.height;
+            if ( height > maxHeight ) {
+              maxHeight = height;
+              bestFormat = format;
+            }
+      }
+      if ( bestFormat ) {
+          _videoCaptureSession.sessionPreset = AVCaptureSessionPresetInputPriority;
+          if ( [_captureDevice lockForConfiguration:NULL] == YES ) {
+              _captureDevice.activeFormat = bestFormat;
+              [_captureDevice unlockForConfiguration];
+          }
+          _previewSize =
+            CGSizeMake(_captureDevice.activeFormat.highResolutionStillImageDimensions.width,
+                       _captureDevice.activeFormat.highResolutionStillImageDimensions.height);
+          break;
       }
       if ([_videoCaptureSession canSetSessionPreset:AVCaptureSessionPreset3840x2160]) {
         _videoCaptureSession.sessionPreset = AVCaptureSessionPreset3840x2160;
