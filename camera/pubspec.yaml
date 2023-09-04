@@ -2,12 +2,13 @@ name: camera
 description: A Flutter plugin for controlling the camera. Supports previewing
   the camera feed, capturing images and video, and streaming image buffers to
   Dart.
-repository: https://github.com/brickit-app/brickit-flutter-camera/tree/main/camera
-version: 0.10.3+2
+repository: https://github.com/flutter/packages/tree/main/packages/camera/camera
+issue_tracker: https://github.com/flutter/flutter/issues?q=is%3Aissue+is%3Aopen+label%3A%22p%3A+camera%22
+version: 0.10.5+4
 
 environment:
-  sdk: ">=2.18.0 <4.0.0"
-  flutter: ">=3.3.0"
+  sdk: ">=2.19.0 <4.0.0"
+  flutter: ">=3.7.0"
 
 flutter:
   plugin:
@@ -20,15 +21,9 @@ flutter:
         default_package: camera_web
 
 dependencies:
-  camera_android:
-    git:
-      url: https://github.com/brickit-app/brickit-flutter-camera
-      path: camera_android
-  camera_avfoundation:
-    git:
-      url: https://github.com/brickit-app/brickit-flutter-camera
-      path: camera_avfoundation
-  camera_platform_interface: ^2.3.2
+  camera_android: ^0.10.7
+  camera_avfoundation: ^0.9.13
+  camera_platform_interface: ^2.5.0
   camera_web: ^0.3.1
   flutter:
     sdk: flutter
@@ -36,10 +31,11 @@ dependencies:
   quiver: ^3.0.0
 
 dev_dependencies:
-  flutter_driver:
-    sdk: flutter
   flutter_test:
     sdk: flutter
-  mockito: 5.4.0
+  mockito: 5.4.1
   plugin_platform_interface: ^2.0.0
   video_player: ^2.0.0
+
+topics:
+  - camera
