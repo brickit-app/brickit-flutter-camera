@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
@@ -631,7 +632,7 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
       CameraDescription cameraDescription) async {
     final CameraController cameraController = CameraController(
       cameraDescription,
-      kIsWeb ? ResolutionPreset.max : ResolutionPreset.medium,
+      ResolutionPreset.max,
       enableAudio: enableAudio,
       imageFormatGroup: ImageFormatGroup.jpeg,
     );
@@ -714,9 +715,25 @@ class _CameraExampleHomeState extends State<CameraExampleHome>
         });
         if (file != null) {
           showInSnackBar('Picture saved to ${file.path}');
+
+          _loadImage(file.path).then((image) {
+            debugPrint(
+              'Picture resolution is ${image.height} x ${image.width}',
+            );
+          });
         }
       }
     });
+  }
+
+  Future<ui.Image> _loadImage(String imagePath) async {
+    final Uint8List imageBytes = await File(imagePath).readAsBytes();
+    final Completer<ui.Image> imageCompleter = Completer();
+    ui.decodeImageFromList(imageBytes, (ui.Image image) {
+      imageCompleter.complete(image);
+    });
+
+    return imageCompleter.future;
   }
 
   void onFlashModeButtonPressed() {
