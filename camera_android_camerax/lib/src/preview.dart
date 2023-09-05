@@ -3,28 +3,31 @@
 // found in the LICENSE file.
 
 import 'package:flutter/services.dart' show BinaryMessenger;
+import 'package:meta/meta.dart' show immutable;
 
 import 'camerax_library.g.dart';
 import 'instance_manager.dart';
 import 'java_object.dart';
+import 'resolution_selector.dart';
 import 'use_case.dart';
 
 /// Use case that provides a camera preview stream for display.
 ///
 /// See https://developer.android.com/reference/androidx/camera/core/Preview.
+@immutable
 class Preview extends UseCase {
   /// Creates a [Preview].
   Preview(
       {BinaryMessenger? binaryMessenger,
       InstanceManager? instanceManager,
       this.targetRotation,
-      this.targetResolution})
+      this.resolutionSelector})
       : super.detached(
             binaryMessenger: binaryMessenger,
             instanceManager: instanceManager) {
     _api = PreviewHostApiImpl(
         binaryMessenger: binaryMessenger, instanceManager: instanceManager);
-    _api.createFromInstance(this, targetRotation, targetResolution);
+    _api.createFromInstance(this, targetRotation, resolutionSelector);
   }
 
   /// Constructs a [Preview] that is not automatically attached to a native object.
@@ -32,7 +35,7 @@ class Preview extends UseCase {
       {BinaryMessenger? binaryMessenger,
       InstanceManager? instanceManager,
       this.targetRotation,
-      this.targetResolution})
+      this.resolutionSelector})
       : super.detached(
             binaryMessenger: binaryMessenger,
             instanceManager: instanceManager) {
@@ -46,7 +49,10 @@ class Preview extends UseCase {
   final int? targetRotation;
 
   /// Target resolution of the camera preview stream.
-  final ResolutionInfo? targetResolution;
+  ///
+  /// If not set, this [UseCase] will default to the behavior described in:
+  /// https://developer.android.com/reference/androidx/camera/core/Preview.Builder#setResolutionSelector(androidx.camera.core.resolutionselector.ResolutionSelector).
+  final ResolutionSelector? resolutionSelector;
 
   /// Sets the surface provider for the preview stream.
   ///
@@ -70,15 +76,19 @@ class Preview extends UseCase {
 
 /// Host API implementation of [Preview].
 class PreviewHostApiImpl extends PreviewHostApi {
-  /// Constructs a [PreviewHostApiImpl].
+  /// Constructs an [PreviewHostApiImpl].
+  ///
+  /// If [binaryMessenger] is null, the default [BinaryMessenger] will be used,
+  /// which routes to the host platform.
+  ///
+  /// An [instanceManager] is typically passed when a copy of an instance
+  /// contained by an [InstanceManager] is being created. If left null, it
+  /// will default to the global instance defined in [JavaObject].
   PreviewHostApiImpl({this.binaryMessenger, InstanceManager? instanceManager}) {
     this.instanceManager = instanceManager ?? JavaObject.globalInstanceManager;
   }
 
   /// Receives binary data across the Flutter platform barrier.
-  ///
-  /// If it is null, the default BinaryMessenger will be used which routes to
-  /// the host platform.
   final BinaryMessenger? binaryMessenger;
 
   /// Maintains instances stored to communicate with native language objects.
@@ -86,27 +96,30 @@ class PreviewHostApiImpl extends PreviewHostApi {
 
   /// Creates a [Preview] with the target rotation and target resolution if
   /// specified.
-  void createFromInstance(
-      Preview instance, int? targetRotation, ResolutionInfo? targetResolution) {
+  void createFromInstance(Preview instance, int? targetRotation,
+      ResolutionSelector? resolutionSelector) {
     final int identifier = instanceManager.addDartCreatedInstance(instance,
         onCopy: (Preview original) {
       return Preview.detached(
           binaryMessenger: binaryMessenger,
           instanceManager: instanceManager,
           targetRotation: original.targetRotation,
-          targetResolution: original.targetResolution);
+          resolutionSelector: original.resolutionSelector);
     });
-    create(identifier, targetRotation, targetResolution);
+    create(
+        identifier,
+        targetRotation,
+        resolutionSelector == null
+            ? null
+            : instanceManager.getIdentifier(resolutionSelector));
   }
 
   /// Sets the surface provider of the specified [Preview] instance and returns
   /// the ID corresponding to the surface it will provide.
   Future<int> setSurfaceProviderFromInstance(Preview instance) async {
     final int? identifier = instanceManager.getIdentifier(instance);
-    assert(identifier != null,
-        'No Preview has the identifer of that requested to set the surface provider on.');
-
     final int surfaceTextureEntryId = await setSurfaceProvider(identifier!);
+
     return surfaceTextureEntryId;
   }
 
@@ -119,10 +132,8 @@ class PreviewHostApiImpl extends PreviewHostApi {
   /// Gets the resolution information of the specified [Preview] instance.
   Future<ResolutionInfo> getResolutionInfoFromInstance(Preview instance) async {
     final int? identifier = instanceManager.getIdentifier(instance);
-    assert(identifier != null,
-        'No Preview has the identifer of that requested to get the resolution information for.');
-
     final ResolutionInfo resolutionInfo = await getResolutionInfo(identifier!);
+
     return resolutionInfo;
   }
 }

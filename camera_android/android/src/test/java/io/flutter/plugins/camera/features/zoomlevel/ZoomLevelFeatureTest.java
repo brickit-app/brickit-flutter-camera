@@ -18,7 +18,9 @@ import static org.mockito.Mockito.when;
 
 import android.graphics.Rect;
 import android.hardware.camera2.CaptureRequest;
+import android.os.Build;
 import io.flutter.plugins.camera.CameraProperties;
+import io.flutter.plugins.camera.SdkCapabilityChecker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,7 +42,7 @@ public class ZoomLevelFeatureTest {
     mockSensorArray = mock(Rect.class);
 
     mockedStaticCameraZoom
-        .when(() -> ZoomUtils.computeZoom(anyFloat(), any(), anyFloat(), anyFloat()))
+        .when(() -> ZoomUtils.computeZoomRect(anyFloat(), any(), anyFloat(), anyFloat()))
         .thenReturn(mockZoomArea);
   }
 
@@ -115,7 +117,7 @@ public class ZoomLevelFeatureTest {
   public void getValue_shouldReturnNullIfNotSet() {
     ZoomLevelFeature zoomLevelFeature = new ZoomLevelFeature(mockCameraProperties);
 
-    assertEquals(1.0, (float) zoomLevelFeature.getValue(), 0);
+    assertEquals(1.0, zoomLevelFeature.getValue(), 0);
   }
 
   @Test
@@ -124,7 +126,7 @@ public class ZoomLevelFeatureTest {
 
     zoomLevelFeature.setValue(2.3f);
 
-    assertEquals(2.3f, (float) zoomLevelFeature.getValue(), 0);
+    assertEquals(2.3f, zoomLevelFeature.getValue(), 0);
   }
 
   @Test
@@ -148,6 +150,22 @@ public class ZoomLevelFeatureTest {
   }
 
   @Test
+  public void updateBuilder_shouldControlZoomRatioWhenCheckIsSupportIsTrue() throws Exception {
+    setSdkVersion(Build.VERSION_CODES.R);
+    when(mockCameraProperties.getSensorInfoActiveArraySize()).thenReturn(mockSensorArray);
+    when(mockCameraProperties.getScalerMaxZoomRatio()).thenReturn(42f);
+    when(mockCameraProperties.getScalerMinZoomRatio()).thenReturn(1.0f);
+
+    ZoomLevelFeature zoomLevelFeature = new ZoomLevelFeature(mockCameraProperties);
+
+    CaptureRequest.Builder mockBuilder = mock(CaptureRequest.Builder.class);
+
+    zoomLevelFeature.updateBuilder(mockBuilder);
+
+    verify(mockBuilder, times(1)).set(CaptureRequest.CONTROL_ZOOM_RATIO, 0.0f);
+  }
+
+  @Test
   public void getMinimumZoomLevel() {
     ZoomLevelFeature zoomLevelFeature = new ZoomLevelFeature(mockCameraProperties);
 
@@ -162,5 +180,34 @@ public class ZoomLevelFeatureTest {
     ZoomLevelFeature zoomLevelFeature = new ZoomLevelFeature(mockCameraProperties);
 
     assertEquals(42f, zoomLevelFeature.getMaximumZoomLevel(), 0);
+  }
+
+  @Test
+  public void checkZoomLevelFeature_callsMaxDigitalZoomOnAndroidQ() throws Exception {
+    setSdkVersion(Build.VERSION_CODES.Q);
+
+    when(mockCameraProperties.getSensorInfoActiveArraySize()).thenReturn(mockSensorArray);
+
+    new ZoomLevelFeature(mockCameraProperties);
+
+    verify(mockCameraProperties, times(0)).getScalerMaxZoomRatio();
+    verify(mockCameraProperties, times(0)).getScalerMinZoomRatio();
+    verify(mockCameraProperties, times(1)).getScalerAvailableMaxDigitalZoom();
+  }
+
+  @Test
+  public void checkZoomLevelFeature_callsScalarMaxZoomRatioOnAndroidR() throws Exception {
+    setSdkVersion(Build.VERSION_CODES.R);
+    when(mockCameraProperties.getSensorInfoActiveArraySize()).thenReturn(mockSensorArray);
+
+    new ZoomLevelFeature(mockCameraProperties);
+
+    verify(mockCameraProperties, times(1)).getScalerMaxZoomRatio();
+    verify(mockCameraProperties, times(1)).getScalerMinZoomRatio();
+    verify(mockCameraProperties, times(0)).getScalerAvailableMaxDigitalZoom();
+  }
+
+  static void setSdkVersion(int sdkVersion) throws Exception {
+    SdkCapabilityChecker.SDK_VERSION = sdkVersion;
   }
 }

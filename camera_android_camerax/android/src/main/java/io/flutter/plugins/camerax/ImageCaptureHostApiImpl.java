@@ -5,12 +5,12 @@
 package io.flutter.plugins.camerax;
 
 import android.content.Context;
-import android.util.Size;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
+import androidx.camera.core.resolutionselector.ResolutionSelector;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugins.camerax.GeneratedCameraXLibrary.ImageCaptureHostApi;
 import java.io.File;
@@ -28,7 +28,7 @@ public class ImageCaptureHostApiImpl implements ImageCaptureHostApi {
   public static final String TEMPORARY_FILE_NAME = "CAP";
   public static final String JPG_FILE_TYPE = ".jpg";
 
-  @VisibleForTesting public CameraXProxy cameraXProxy = new CameraXProxy();
+  @VisibleForTesting public @NonNull CameraXProxy cameraXProxy = new CameraXProxy();
 
   public ImageCaptureHostApiImpl(
       @NonNull BinaryMessenger binaryMessenger,
@@ -43,7 +43,7 @@ public class ImageCaptureHostApiImpl implements ImageCaptureHostApi {
    * Sets the context that the {@link ImageCapture} will use to find a location to save a captured
    * image.
    */
-  public void setContext(Context context) {
+  public void setContext(@NonNull Context context) {
     this.context = context;
   }
 
@@ -53,19 +53,19 @@ public class ImageCaptureHostApiImpl implements ImageCaptureHostApi {
    */
   @Override
   public void create(
-      @NonNull Long identifier,
-      @Nullable Long flashMode,
-      @Nullable GeneratedCameraXLibrary.ResolutionInfo targetResolution) {
+      @NonNull Long identifier, @Nullable Long flashMode, @Nullable Long resolutionSelectorId) {
     ImageCapture.Builder imageCaptureBuilder = cameraXProxy.createImageCaptureBuilder();
+
     if (flashMode != null) {
       // This sets the requested flash mode, but may fail silently.
       imageCaptureBuilder.setFlashMode(flashMode.intValue());
     }
-    if (targetResolution != null) {
-      imageCaptureBuilder.setTargetResolution(
-          new Size(
-              targetResolution.getWidth().intValue(), targetResolution.getHeight().intValue()));
+    if (resolutionSelectorId != null) {
+      ResolutionSelector resolutionSelector =
+          Objects.requireNonNull(instanceManager.getInstance(resolutionSelectorId));
+      imageCaptureBuilder.setResolutionSelector(resolutionSelector);
     }
+
     ImageCapture imageCapture = imageCaptureBuilder.build();
     instanceManager.addDartCreatedInstance(imageCapture, identifier);
   }
@@ -104,7 +104,7 @@ public class ImageCaptureHostApiImpl implements ImageCaptureHostApi {
 
   /** Creates a callback used when saving a captured image. */
   @VisibleForTesting
-  public ImageCapture.OnImageSavedCallback createOnImageSavedCallback(
+  public @NonNull ImageCapture.OnImageSavedCallback createOnImageSavedCallback(
       @NonNull File file, @NonNull GeneratedCameraXLibrary.Result<String> result) {
     return new ImageCapture.OnImageSavedCallback() {
       @Override

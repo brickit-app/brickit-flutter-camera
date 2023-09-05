@@ -4,56 +4,69 @@
 
 package io.flutter.plugins.camera.features.zoomlevel;
 
+import android.annotation.SuppressLint;
 import android.graphics.Rect;
 import android.hardware.camera2.CaptureRequest;
+import androidx.annotation.NonNull;
 import io.flutter.plugins.camera.CameraProperties;
+import io.flutter.plugins.camera.SdkCapabilityChecker;
 import io.flutter.plugins.camera.features.CameraFeature;
 
 /** Controls the zoom configuration on the {@link android.hardware.camera2} API. */
 public class ZoomLevelFeature extends CameraFeature<Float> {
-  private static final float MINIMUM_ZOOM_LEVEL = 1.0f;
+  private static final Float DEFAULT_ZOOM_LEVEL = 1.0f;
   private final boolean hasSupport;
   private final Rect sensorArraySize;
-  private Float currentSetting = MINIMUM_ZOOM_LEVEL;
-  private Float maximumZoomLevel = MINIMUM_ZOOM_LEVEL;
+  @NonNull private Float currentSetting = DEFAULT_ZOOM_LEVEL;
+  private Float minimumZoomLevel = currentSetting;
+  private final Float maximumZoomLevel;
 
   /**
    * Creates a new instance of the {@link ZoomLevelFeature}.
    *
    * @param cameraProperties Collection of characteristics for the current camera device.
    */
-  public ZoomLevelFeature(CameraProperties cameraProperties) {
+  public ZoomLevelFeature(@NonNull CameraProperties cameraProperties) {
     super(cameraProperties);
 
     sensorArraySize = cameraProperties.getSensorInfoActiveArraySize();
 
     if (sensorArraySize == null) {
-      maximumZoomLevel = MINIMUM_ZOOM_LEVEL;
+      maximumZoomLevel = minimumZoomLevel;
       hasSupport = false;
       return;
     }
+    // On Android 11+ CONTROL_ZOOM_RATIO_RANGE should be use to get the zoom ratio directly as minimum zoom does not have to be 1.0f.
+    if (SdkCapabilityChecker.supportsZoomRatio()) {
+      minimumZoomLevel = cameraProperties.getScalerMinZoomRatio();
+      maximumZoomLevel = cameraProperties.getScalerMaxZoomRatio();
+    } else {
+      minimumZoomLevel = DEFAULT_ZOOM_LEVEL;
+      Float maxDigitalZoom = cameraProperties.getScalerAvailableMaxDigitalZoom();
+      maximumZoomLevel =
+          ((maxDigitalZoom == null) || (maxDigitalZoom < minimumZoomLevel))
+              ? minimumZoomLevel
+              : maxDigitalZoom;
+    }
 
-    Float maxDigitalZoom = cameraProperties.getScalerAvailableMaxDigitalZoom();
-    maximumZoomLevel =
-        ((maxDigitalZoom == null) || (maxDigitalZoom < MINIMUM_ZOOM_LEVEL))
-            ? MINIMUM_ZOOM_LEVEL
-            : maxDigitalZoom;
-
-    hasSupport = (Float.compare(maximumZoomLevel, MINIMUM_ZOOM_LEVEL) > 0);
+    hasSupport = (Float.compare(maximumZoomLevel, minimumZoomLevel) > 0);
   }
 
+  @NonNull
   @Override
   public String getDebugName() {
     return "ZoomLevelFeature";
   }
 
+  @SuppressLint("KotlinPropertyAccess")
+  @NonNull
   @Override
   public Float getValue() {
     return currentSetting;
   }
 
   @Override
-  public void setValue(Float value) {
+  public void setValue(@NonNull Float value) {
     currentSetting = value;
   }
 
@@ -63,15 +76,23 @@ public class ZoomLevelFeature extends CameraFeature<Float> {
   }
 
   @Override
-  public void updateBuilder(CaptureRequest.Builder requestBuilder) {
+  public void updateBuilder(@NonNull CaptureRequest.Builder requestBuilder) {
     if (!checkIsSupported()) {
       return;
     }
-
-    final Rect computedZoom =
-        ZoomUtils.computeZoom(
-            currentSetting, sensorArraySize, MINIMUM_ZOOM_LEVEL, maximumZoomLevel);
-    requestBuilder.set(CaptureRequest.SCALER_CROP_REGION, computedZoom);
+    // On Android 11+ CONTROL_ZOOM_RATIO can be set to a zoom ratio and the camera feed will compute
+    // how to zoom on its own accounting for multiple logical cameras.
+    // Prior the image cropping window must be calculated and set manually.
+    if (SdkCapabilityChecker.supportsZoomRatio()) {
+      requestBuilder.set(
+          CaptureRequest.CONTROL_ZOOM_RATIO,
+          ZoomUtils.computeZoomRatio(currentSetting, minimumZoomLevel, maximumZoomLevel));
+    } else {
+      final Rect computedZoom =
+          ZoomUtils.computeZoomRect(
+              currentSetting, sensorArraySize, minimumZoomLevel, maximumZoomLevel);
+      requestBuilder.set(CaptureRequest.SCALER_CROP_REGION, computedZoom);
+    }
   }
 
   /**
@@ -80,7 +101,7 @@ public class ZoomLevelFeature extends CameraFeature<Float> {
    * @return The minimum zoom level.
    */
   public float getMinimumZoomLevel() {
-    return MINIMUM_ZOOM_LEVEL;
+    return minimumZoomLevel;
   }
 
   /**
