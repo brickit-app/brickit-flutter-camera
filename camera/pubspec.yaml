@@ -4,11 +4,11 @@ description: A Flutter plugin for controlling the camera. Supports previewing
   Dart.
 repository: https://github.com/flutter/packages/tree/main/packages/camera/camera
 issue_tracker: https://github.com/flutter/flutter/issues?q=is%3Aissue+is%3Aopen+label%3A%22p%3A+camera%22
-version: 0.10.5+9
+version: 0.10.5+10
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
-  flutter: ">=3.10.0"
+  sdk: ^3.1.0
+  flutter: ">=3.13.0"
 
 flutter:
   plugin:
@@ -25,10 +25,7 @@ dependencies:
     git:
       url: https://github.com/brickit-app/brickit-flutter-camera
       path: camera_android
-  camera_avfoundation:
-    git:
-      url: https://github.com/brickit-app/brickit-flutter-camera
-      path: camera_avfoundation
+  camera_avfoundation: ^0.9.14+1
   camera_platform_interface: ^2.5.0
   camera_web: ^0.3.1
   flutter:
