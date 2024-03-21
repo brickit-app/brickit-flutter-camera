@@ -4,8 +4,8 @@ repository: https://github.com/brickit-app/brickit-flutter-camera/tree/main/came
 version: 0.9.13+10
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
-  flutter: ">=3.10.0"
+  sdk: ^3.1.0
+  flutter: ">=3.13.0"
 
 flutter:
   plugin:
